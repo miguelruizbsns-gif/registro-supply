@@ -1,0 +1,697 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Registro de Componentes — Supply</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+  :root{
+    --bg:#eceef1; --panel:#ffffff; --ink:#1a2230; --ink-soft:#5b6472;
+    --line:#d5dae1; --line-soft:#e7ebef; --accent:#0f5c8c; --accent-soft:#e8f1f7;
+    --ok:#1f8a4c; --ok-bg:#e6f4ec; --warn:#c98a12; --warn-bg:#fbf2df;
+    --bad:#c0392b; --bad-bg:#fbeae7; --field:#f7f9fb;
+    --shadow:0 1px 2px rgba(20,30,45,.06),0 4px 16px rgba(20,30,45,.05);
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font-family:"Segoe UI",system-ui,-apple-system,sans-serif;font-size:13px;line-height:1.45}
+  .wrap{max-width:1180px;margin:0 auto;padding:18px 20px 60px}
+  header{display:flex;align-items:baseline;justify-content:space-between;
+    border-bottom:2px solid var(--ink);padding-bottom:10px;margin-bottom:4px}
+  header h1{font-size:16px;font-weight:700;letter-spacing:.2px;margin:0}
+  header h1 span{color:var(--accent)}
+  header .meta{font-size:11px;color:var(--ink-soft);text-align:right}
+  .sub{font-size:11.5px;color:var(--ink-soft);margin:8px 0 18px}
+  .cols{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  @media(max-width:860px){.cols{grid-template-columns:1fr}}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:8px;
+    box-shadow:var(--shadow);overflow:hidden}
+  .card > h2{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.7px;
+    color:var(--ink-soft);margin:0;padding:11px 14px;background:var(--field);
+    border-bottom:1px solid var(--line-soft);display:flex;justify-content:space-between;align-items:center}
+  .card .body{padding:14px}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px 12px}
+  .grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px 12px}
+  .full{grid-column:1/-1}
+  .f{display:flex;flex-direction:column;gap:3px}
+  .f label{font-size:11px;font-weight:600;color:var(--ink-soft)}
+  .f label .req{color:var(--bad);margin-left:2px}
+  .f input,.f select,.f textarea{width:100%;padding:7px 8px;font-size:12.5px;
+    border:1px solid var(--line);border-radius:5px;background:var(--field);
+    color:var(--ink);font-family:inherit}
+  .f input:focus,.f select:focus,.f textarea:focus{outline:none;border-color:var(--accent);
+    background:#fff;box-shadow:0 0 0 3px var(--accent-soft)}
+  .f input[readonly]{background:#eef1f4;color:var(--ink-soft);cursor:not-allowed}
+  .f textarea{resize:vertical;min-height:52px}
+  .hint{font-size:10px;color:var(--ink-soft);margin-top:1px}
+  /* ID destacado */
+  .idbox{background:var(--accent-soft);border:1px solid #bcd8ea;border-radius:6px;
+    padding:8px 12px;display:flex;align-items:center;gap:10px;margin-bottom:12px}
+  .idbox .lbl{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--accent)}
+  .idbox .val{font-size:16px;font-weight:700;font-family:"Consolas",monospace;color:var(--ink)}
+  .idbox .val.empty{color:var(--ink-soft);font-size:12px;font-weight:500;font-family:inherit}
+  .semaforo{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:20px;
+    font-weight:700;font-size:11.5px;border:1px solid transparent}
+  .sem-ok{background:var(--ok-bg);color:var(--ok);border-color:#bfe3cd}
+  .sem-warn{background:var(--warn-bg);color:var(--warn);border-color:#eed9a8}
+  .sem-bad{background:var(--bad-bg);color:var(--bad);border-color:#f0c4bd}
+  .sem-none{background:#eef1f4;color:var(--ink-soft);border-color:var(--line)}
+  .dot{width:9px;height:9px;border-radius:50%;background:currentColor}
+  .hist-add{display:flex;gap:8px;align-items:flex-end}
+  .hist-add .f{flex:1}
+  .hist-list{margin-top:10px;border:1px solid var(--line-soft);border-radius:6px;
+    max-height:150px;overflow-y:auto;background:var(--field)}
+  .hist-item{padding:7px 10px;border-bottom:1px solid var(--line-soft);font-size:12px}
+  .hist-item:last-child{border-bottom:none}
+  .hist-item .fecha{font-weight:700;color:var(--accent);margin-right:6px}
+  .hist-empty{padding:12px;text-align:center;color:var(--ink-soft);font-size:11px}
+  #flujoBox{font-size:11.5px}
+  .paso{display:flex;align-items:center;gap:8px;padding:5px 8px;border-radius:4px}
+  .paso:nth-child(odd){background:var(--field)}
+  .paso .n{flex:0 0 22px;height:22px;border-radius:50%;background:var(--accent);color:#fff;
+    display:flex;align-items:center;justify-content:center;font-weight:700;font-size:10px}
+  .paso .txt{flex:1}
+  .paso .resp{font-size:10px;color:var(--ink-soft);background:#eef1f4;
+    padding:2px 7px;border-radius:10px;white-space:nowrap}
+  .btns{display:flex;gap:10px;margin-top:18px;flex-wrap:wrap}
+  button{font-family:inherit;font-size:13px;font-weight:600;border-radius:6px;
+    padding:10px 18px;border:1px solid transparent;cursor:pointer;transition:.12s}
+  .btn-primary{background:var(--accent);color:#fff}
+  .btn-primary:hover{background:#0c4d76}
+  .btn-ghost{background:#fff;color:var(--ink);border-color:var(--line)}
+  .btn-ghost:hover{background:var(--field)}
+  .btn-add{background:var(--accent);color:#fff;padding:7px 12px;font-size:12px}
+  .btn-add:hover{background:#0c4d76}
+  .btn-sm{padding:4px 10px;font-size:11px;border-radius:5px}
+  .btn-edit{background:var(--accent-soft);color:var(--accent);border-color:#bcd8ea}
+  .btn-edit:hover{background:#d8e9f4}
+  .btn-del{background:var(--bad-bg);color:var(--bad);border-color:#f0c4bd}
+  .btn-del:hover{background:#f6d9d3}
+  .btn-newproj{background:#fff;color:var(--accent);border:1px solid #bcd8ea;font-size:11px;padding:4px 10px;border-radius:5px}
+  .btn-newproj:hover{background:var(--accent-soft)}
+  .btn-danger-ghost{color:var(--bad);border-color:#f0c4bd}
+  .btn-danger-ghost:hover{background:var(--bad-bg)}
+  .saved-flag{margin-left:auto;align-self:center;font-size:11px;color:var(--ok);
+    display:flex;align-items:center;gap:6px}
+  .saved-flag::before{content:'';width:8px;height:8px;border-radius:50%;background:var(--ok)}
+  .tabla-wrap{margin-top:26px}
+  .tabla-wrap h2{font-size:13px;font-weight:700;margin:0 0 10px;
+    display:flex;align-items:center;gap:8px}
+  .badge{background:var(--accent);color:#fff;font-size:11px;font-weight:700;
+    padding:1px 9px;border-radius:10px}
+  .scroll{overflow-x:auto;border:1px solid var(--line);border-radius:8px;background:#fff}
+  table{border-collapse:collapse;width:100%;font-size:11.5px;white-space:nowrap}
+  th{background:var(--field);text-align:left;padding:8px 10px;font-weight:700;
+    color:var(--ink-soft);border-bottom:1px solid var(--line);position:sticky;top:0}
+  td{padding:7px 10px;border-bottom:1px solid var(--line-soft)}
+  tr:hover td{background:#f9fbfc}
+  .tabla-empty{padding:26px;text-align:center;color:var(--ink-soft)}
+  .mini-sem{display:inline-block;width:10px;height:10px;border-radius:50%}
+  .row-edit{background:var(--warn-bg)!important;outline:2px solid var(--warn)}
+  .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);
+    background:var(--ink);color:#fff;padding:12px 22px;border-radius:8px;font-size:13px;
+    font-weight:600;box-shadow:0 8px 30px rgba(0,0,0,.25);opacity:0;transition:.3s;z-index:99}
+  .toast.show{transform:translateX(-50%) translateY(0);opacity:1}
+  .aviso{background:var(--warn-bg);border:1px solid #eed9a8;color:#7a5807;
+    padding:8px 12px;border-radius:6px;font-size:11px;margin-top:10px;display:none}
+  .aviso.show{display:block}
+  /* modo edicion barra */
+  .editbar{background:var(--warn-bg);border:1px solid #eed9a8;border-radius:8px;
+    padding:10px 14px;margin-bottom:14px;display:none;align-items:center;justify-content:space-between;gap:10px}
+  .editbar.show{display:flex}
+  .editbar .txt{font-size:12px;font-weight:600;color:#7a5807}
+  /* MODAL */
+  .modal-bg{position:fixed;inset:0;background:rgba(20,30,45,.5);display:none;
+    align-items:center;justify-content:center;z-index:100;padding:20px}
+  .modal-bg.show{display:flex}
+  .modal{background:#fff;border-radius:10px;max-width:440px;width:100%;
+    box-shadow:0 20px 60px rgba(0,0,0,.3);overflow:hidden}
+  .modal h3{margin:0;padding:14px 18px;font-size:14px;border-bottom:1px solid var(--line-soft);
+    background:var(--field);display:flex;justify-content:space-between;align-items:center}
+  .modal h3 .x{cursor:pointer;color:var(--ink-soft);font-size:18px;line-height:1;background:none;border:none;padding:0}
+  .modal .mbody{padding:18px;display:flex;flex-direction:column;gap:12px}
+  .modal .mfoot{padding:12px 18px;border-top:1px solid var(--line-soft);display:flex;gap:10px;justify-content:flex-end}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Registro de Componentes <span>· Supply</span></h1>
+    <div class="meta">Status de Bienes y Servicios 2026<br>Prototipo v1 — llenado asistido</div>
+  </header>
+  <div class="sub">Completa el formulario y agrega el componente. Los datos se acumulan abajo y se descargan como Excel con la estructura oficial.</div>
+
+  <!-- BARRA MODO EDICION -->
+  <div class="editbar" id="editbar">
+    <div class="txt">Editando: <b id="editId"></b> — cambia lo que quieras y guarda.</div>
+    <button class="btn-ghost btn-sm" onclick="cancelarEdit()">Cancelar edición</button>
+  </div>
+
+  <div class="cols">
+    <div style="display:flex;flex-direction:column;gap:16px">
+
+      <div class="card">
+        <h2>1 · Datos generales del componente</h2>
+        <div class="body">
+          <!-- ID DESTACADO -->
+          <div class="idbox">
+            <div class="lbl">ID Supply<br>(automático)</div>
+            <div class="val empty" id="idVal">Elige un proyecto</div>
+          </div>
+          <div class="grid2">
+            <div class="f full">
+              <label>Proyecto <span class="req">*</span></label>
+              <select id="proyecto"></select>
+              <button class="btn-newproj" style="margin-top:5px;align-self:flex-start" onclick="abrirModalProj()">+ Agregar proyecto nuevo</button>
+            </div>
+            <div class="f">
+              <label>Grupo</label>
+              <select id="grupo"></select>
+            </div>
+            <div class="f">
+              <label>Cliente / Dueño</label>
+              <select id="cliente"></select>
+            </div>
+            <div class="f">
+              <label>Categoría</label>
+              <select id="categoria"></select>
+            </div>
+            <div class="f">
+              <label>Paquete</label>
+              <input id="paquete" placeholder="Escribir paquete">
+            </div>
+            <div class="f full">
+              <label>Nombre del componente <span class="req">*</span></label>
+              <input id="nombreComp" placeholder="Ej. Implementación Relleno Sanitario">
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>2 · Clasificación y presupuesto</h2>
+        <div class="body">
+          <div class="grid2">
+            <div class="f">
+              <label>Tipo de asignación <span class="req">*</span></label>
+              <select id="tipoAsig"></select>
+            </div>
+            <div class="f">
+              <label>Servicio o Suministro <span class="req">*</span></label>
+              <select id="servSum">
+                <option value="">—</option>
+                <option value="Servicio">Servicio</option>
+                <option value="Suministro">Suministro</option>
+              </select>
+            </div>
+            <div class="f">
+              <label># Ticket / PR</label>
+              <input id="ticket" placeholder="Ej. S1028365">
+            </div>
+            <div class="f">
+              <label>Tipo</label>
+              <select id="tipo"></select>
+            </div>
+          </div>
+          <div class="grid3" style="margin-top:10px">
+            <div class="f">
+              <label>Budget — Estudios (US$M)</label>
+              <input id="budEst" type="number" step="0.001" placeholder="0.000">
+            </div>
+            <div class="f">
+              <label>Budget — Planificado (US$M)</label>
+              <input id="budPlan" type="number" step="0.001" placeholder="0.000">
+            </div>
+            <div class="f">
+              <label>Budget — Real (US$M)</label>
+              <input id="budReal" type="number" step="0.001" placeholder="0.000">
+            </div>
+          </div>
+          <div class="aviso" id="avisoSS">Sole/Single Source: el flujo mostrado reutiliza el de Licitación como referencia. Se ajustará cuando Supply defina la secuencia propia.</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>3 · Registro</h2>
+        <div class="body">
+          <div class="grid2">
+            <div class="f">
+              <label>Registrado por <span class="req">*</span></label>
+              <input id="registradoPor" placeholder="Tu nombre">
+            </div>
+            <div class="f">
+              <label>Fecha de registro</label>
+              <input id="fechaReg" type="date" readonly>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:16px">
+
+      <div class="card">
+        <h2>4 · Seguimiento del hito</h2>
+        <div class="body">
+          <div class="grid2">
+            <div class="f">
+              <label>Estatus específico actual</label>
+              <select id="estatusEsp"><option value="">Elige tipo + serv/sum primero</option></select>
+              <div class="hint" id="respHint"></div>
+            </div>
+            <div class="f">
+              <label>Responsable del status</label>
+              <input id="respStatus" readonly placeholder="Automático según paso">
+            </div>
+            <div class="f">
+              <label>Fecha meta del hito</label>
+              <input id="fechaMeta" type="date">
+            </div>
+            <div class="f">
+              <label>Fecha real de cumplimiento</label>
+              <input id="fechaReal" type="date">
+              <div class="hint">Vacío si aún no se cumple</div>
+            </div>
+          </div>
+          <div style="margin-top:12px;display:flex;align-items:center;gap:14px">
+            <div>
+              <div class="hint" style="margin-bottom:3px">Desviación (días)</div>
+              <div id="desvView" style="font-size:20px;font-weight:700">—</div>
+            </div>
+            <div>
+              <div class="hint" style="margin-bottom:3px">Semáforo</div>
+              <div id="semView" class="semaforo sem-none"><span class="dot"></span>Sin fecha</div>
+            </div>
+          </div>
+          <div class="hint" style="margin-top:8px">Regla: Meta − Real. Positivo = adelantado (verde) · 0 = a tiempo (ámbar) · negativo = atrasado (rojo).</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>5 · Historial (se acumula)</h2>
+        <div class="body">
+          <div class="hist-add">
+            <div class="f">
+              <label>Nueva nota de avance</label>
+              <input id="histNota" placeholder="Ej. En evaluación técnico-económica">
+            </div>
+            <button class="btn-add" onclick="addHist()">+ Agregar</button>
+          </div>
+          <div class="hist-list" id="histList">
+            <div class="hist-empty">Sin notas todavía. Cada nota se guarda con su fecha.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>6 · Flujo de pasos (referencia)</h2>
+        <div class="body">
+          <div id="flujoBox"><div class="hint">Elige Tipo de asignación + Servicio/Suministro para ver la secuencia oficial de pasos y responsables.</div></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="btns">
+    <button class="btn-primary" id="btnAgregar" onclick="agregar()">Agregar componente al registro</button>
+    <button class="btn-ghost" onclick="limpiar()">Limpiar formulario</button>
+    <button class="btn-ghost" onclick="descargar()">Descargar Excel</button>
+    <button class="btn-ghost btn-danger-ghost" onclick="borrarTodo()">Borrar todo</button>
+    <div class="saved-flag" id="savedFlag">Guardado automático activo</div>
+  </div>
+
+  <div class="tabla-wrap">
+    <h2>Componentes registrados <span class="badge" id="conteo">0</span></h2>
+    <div class="scroll">
+      <table id="tabla">
+        <thead><tr>
+          <th>ID Supply</th><th>Proyecto</th><th>Componente</th><th>Tipo</th>
+          <th>S/S</th><th>Budget Plan</th><th>Estatus</th><th>Resp.</th>
+          <th>Desv.</th><th>Sem.</th><th>Registró</th><th>Acciones</th>
+        </tr></thead>
+        <tbody id="tbody">
+          <tr><td colspan="12" class="tabla-empty">Aún no hay componentes. Agrega el primero desde el formulario.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL AGREGAR PROYECTO -->
+<div class="modal-bg" id="modalProj">
+  <div class="modal">
+    <h3>Agregar proyecto nuevo <button class="x" onclick="cerrarModalProj()">&times;</button></h3>
+    <div class="mbody">
+      <div class="f">
+        <label>Código del proyecto <span class="req">*</span></label>
+        <input id="npCod" placeholder="Ej. 5200P-017999">
+        <div class="hint">Este código se usa para generar el ID Supply de sus componentes.</div>
+      </div>
+      <div class="f">
+        <label>Nombre del proyecto <span class="req">*</span></label>
+        <input id="npNombre" placeholder="Ej. Nueva Planta de Filtrado">
+      </div>
+    </div>
+    <div class="mfoot">
+      <button class="btn-ghost" onclick="cerrarModalProj()">Cancelar</button>
+      <button class="btn-primary" onclick="guardarProj()">Guardar proyecto</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const DATA = {"flujos":{"Licitacion|Servicio":[{"paso":"1. Elaboración de alcance","resp":"Ingeniería"},{"paso":"2. Elab. y Envío de Paq. Téc a Supply (Ticket)","resp":"Ingeniería (SPD)"},{"paso":"3. Rev. de Paq. Téc. por Supply y precalificación aprobada","resp":"Supply"},{"paso":"4. Inicio de licitación","resp":"Supply"},{"paso":"5. Presentación de consultas","resp":"Supply"},{"paso":"6. Absolución de consultas","resp":"Ingeniería"},{"paso":"7. Presentación de propuestas","resp":"Supply"},{"paso":"8. Evaluación técnica","resp":"Ingeniería"},{"paso":"9. Presentación de Lev. de observaciones","resp":"Supply"},{"paso":"10. Evaluación de Lev. de observaciones","resp":"Ingeniería"},{"paso":"11. Evaluación comercial","resp":"Supply"},{"paso":"12. Aprobación de adjudicación (RTA)","resp":"Supply"},{"paso":"13. Firma de contrato","resp":"Supply"},{"paso":"14. KOM","resp":"Supply"},{"paso":"15. Generación de PR","resp":"Usuario"},{"paso":"16. Generación de PO","resp":"Supply"},{"paso":"17. Proceso completado","resp":"Ingeniería (SPD)"}],"Licitacion|Suministro":[{"paso":"1. Elaboración de alcance","resp":"Ingeniería"},{"paso":"2. Elab. y Envío de Paq. Téc a Supply (Ticket)","resp":"Ingeniería (SPD)"},{"paso":"3. Rev. de Paq. Téc. por Supply y precalificación aprobada","resp":"Supply"},{"paso":"4. Inicio de licitación","resp":"Supply"},{"paso":"5. Presentación de consultas","resp":"Supply"},{"paso":"6. Absolución de consultas","resp":"Ingeniería"},{"paso":"7. Presentación de propuestas","resp":"Supply"},{"paso":"8. Evaluación técnica","resp":"Ingeniería"},{"paso":"9. Presentación de Lev. de observaciones","resp":"Supply"},{"paso":"10. Evaluación de Lev. de observaciones","resp":"Ingeniería"},{"paso":"11. Evaluación comercial","resp":"Supply"},{"paso":"12. Aprobación de adjudicación (RTA)","resp":"Supply"},{"paso":"13. Firma de contrato","resp":"Supply"},{"paso":"14. KOM","resp":"Supply"},{"paso":"15. Generación de PR","resp":"Usuario"},{"paso":"16. Generación de PO","resp":"Supply"},{"paso":"17. Fabricación y entrega de suministro","resp":"Supply / Usuario"},{"paso":"18. Transporte a Site","resp":"Supply"},{"paso":"19. Engregado en Site","resp":"Ingeniería (SPD)"}],"CVAF|Servicio":[{"paso":"1. Elaboración de alcance","resp":"Ingeniería"},{"paso":"2. Elab. y Envío de Paq. Téc a Supply (Ticket)","resp":"Ingeniería (SPD)"},{"paso":"3. Revisión de Paq. Téc. por Supply","resp":"Supply"},{"paso":"4. Inicio de CVAF","resp":"Supply"},{"paso":"5. Presentación de consultas","resp":"Supply"},{"paso":"6. Absolución de consultas","resp":"Ingeniería"},{"paso":"7. Presentación de propuestas","resp":"Supply"},{"paso":"8. Evaluación técnica","resp":"Ingeniería"},{"paso":"9. Presentación de Lev. de observaciones","resp":"Supply"},{"paso":"10. Evaluación de Lev. de observaciones","resp":"Ingeniería"},{"paso":"11. Evaluación comercial","resp":"Supply"},{"paso":"12. Aprobación de CVAF","resp":"Supply"},{"paso":"13. Firma de adenda","resp":"Supply"},{"paso":"14. Generación de PR","resp":"Usuario"},{"paso":"15. Generación de PO","resp":"Supply"},{"paso":"16. Proceso completado","resp":"Ingeniería (SPD)"}],"CVAF|Suministro":[{"paso":"1. Elaboración de alcance","resp":"Ingeniería"},{"paso":"2. Elab. y Envío de Paq. Téc a Supply (Ticket)","resp":"Ingeniería (SPD)"},{"paso":"3. Revisión de Paq. Téc. por Supply","resp":"Supply"},{"paso":"4. Inicio de CVAF","resp":"Supply"},{"paso":"5. Presentación de consultas","resp":"Supply"},{"paso":"6. Absolución de consultas","resp":"Ingeniería"},{"paso":"7. Presentación de propuestas","resp":"Supply"},{"paso":"8. Evaluación técnica","resp":"Ingeniería"},{"paso":"9. Presentación de Lev. de observaciones","resp":"Supply"},{"paso":"10. Evaluación de Lev. de observaciones","resp":"Ingeniería"},{"paso":"11. Evaluación comercial","resp":"Supply"},{"paso":"12. Aprobación de CVAF","resp":"Supply"},{"paso":"13. Firma de adenda","resp":"Supply"},{"paso":"14. Generación de PR","resp":"Usuario"},{"paso":"15. Generación de PO","resp":"Supply"},{"paso":"16. Fabricación y entrega de suministro","resp":"Supply / Usuario"},{"paso":"17. Transporte a Site","resp":"Supply"},{"paso":"18. Engregado en site","resp":"Ingeniería (SPD)"},{"paso":"19. On site","resp":""}],"PR|Servicio":[{"paso":"1. Elaboración de alcance","resp":"Ingeniería"},{"paso":"2. Elab. y Envío de Paq. Téc a Supply (Ticket)","resp":"Ingeniería (SPD)"},{"paso":"3. Revisión de Paq. Téc. por Supply","resp":"Usuario"},{"paso":"4. Inicio de licitación","resp":"Supply"},{"paso":"5. Presentación de consultas","resp":"Supply"},{"paso":"6. Absolución de consultas","resp":"Ingeniería"},{"paso":"7. Presentación de propuestas","resp":"Supply"},{"paso":"8. Evaluación técnica","resp":"Ingeniería"},{"paso":"9. Presentación de Lev. de observaciones","resp":"Supply"},{"paso":"10. Evaluación de Lev. de observaciones","resp":"Ingeniería"},{"paso":"11. Evaluación comercial","resp":"Supply"},{"paso":"12. Aprobación de adjudicación","resp":"Supply"},{"paso":"13. Generación de PO","resp":"Supply"},{"paso":"14. Proceso completado","resp":"Ingeniería (SPD)"}],"PR|Suministro":[{"paso":"1. Elaboración de alcance","resp":"Ingeniería"},{"paso":"2. Elab. y Envío de Paq. Téc a Supply (Ticket)","resp":"Ingeniería (SPD)"},{"paso":"3. Revisión de Paq. Téc. por Supply","resp":"Usuario"},{"paso":"4. Inicio de licitación","resp":"Supply"},{"paso":"5. Presentación de consultas","resp":"Supply"},{"paso":"6. Absolución de consultas","resp":"Ingeniería"},{"paso":"7. Presentación de propuestas","resp":"Supply"},{"paso":"8. Evaluación técnica","resp":"Ingeniería"},{"paso":"9. Presentación de Lev. de observaciones","resp":"Supply"},{"paso":"10. Evaluación de Lev. de observaciones","resp":"Ingeniería"},{"paso":"11. Evaluación comercial","resp":"Supply"},{"paso":"12. Aprobación de adjudicación","resp":"Supply"},{"paso":"13. Generación de PO","resp":"Supply"},{"paso":"14. Fabricación y entrega","resp":"Supply / Usuario"},{"paso":"15. Transporte a Site","resp":"Supply"},{"paso":"16. Entregado On site","resp":"Ingeniería (SPD)"}],"SS|Servicio":[{"paso":"1. Elaboración de alcance","resp":"Ingeniería"},{"paso":"2. Elab. y Envío de Paq. Téc a Supply (Ticket)","resp":"Ingeniería (SPD)"},{"paso":"3. Rev. de Paq. Téc. por Supply y precalificación aprobada","resp":"Supply"},{"paso":"4. Inicio de licitación","resp":"Supply"},{"paso":"5. Presentación de consultas","resp":"Supply"},{"paso":"6. Absolución de consultas","resp":"Ingeniería"},{"paso":"7. Presentación de propuestas","resp":"Supply"},{"paso":"8. Evaluación técnica","resp":"Ingeniería"},{"paso":"9. Presentación de Lev. de observaciones","resp":"Supply"},{"paso":"10. Evaluación de Lev. de observaciones","resp":"Ingeniería"},{"paso":"11. Evaluación comercial","resp":"Supply"},{"paso":"12. Aprobación de adjudicación (RTA)","resp":"Supply"},{"paso":"13. Firma de contrato","resp":"Supply"},{"paso":"14. KOM","resp":"Supply"},{"paso":"15. Generación de PR","resp":"Usuario"},{"paso":"16. Generación de PO","resp":"Supply"},{"paso":"17. Proceso completado","resp":"Ingeniería (SPD)"}],"SS|Suministro":[{"paso":"1. Elaboración de alcance","resp":"Ingeniería"},{"paso":"2. Elab. y Envío de Paq. Téc a Supply (Ticket)","resp":"Ingeniería (SPD)"},{"paso":"3. Rev. de Paq. Téc. por Supply y precalificación aprobada","resp":"Supply"},{"paso":"4. Inicio de licitación","resp":"Supply"},{"paso":"5. Presentación de consultas","resp":"Supply"},{"paso":"6. Absolución de consultas","resp":"Ingeniería"},{"paso":"7. Presentación de propuestas","resp":"Supply"},{"paso":"8. Evaluación técnica","resp":"Ingeniería"},{"paso":"9. Presentación de Lev. de observaciones","resp":"Supply"},{"paso":"10. Evaluación de Lev. de observaciones","resp":"Ingeniería"},{"paso":"11. Evaluación comercial","resp":"Supply"},{"paso":"12. Aprobación de adjudicación (RTA)","resp":"Supply"},{"paso":"13. Firma de contrato","resp":"Supply"},{"paso":"14. KOM","resp":"Supply"},{"paso":"15. Generación de PR","resp":"Usuario"},{"paso":"16. Generación de PO","resp":"Supply"},{"paso":"17. Fabricación y entrega de suministro","resp":"Supply / Usuario"},{"paso":"18. Transporte a Site","resp":"Supply"},{"paso":"19. Engregado en Site","resp":"Ingeniería (SPD)"}]},"proyectos":["5200P-012357 - Chalcobamba Fase 1","5200P-012724 - Chemical Metallurgic Laboratory (IMP)","5200P-012866 - Additional Tailings Storage Second Fund (FS)","5200P-013695 - Pit FB Water Management Acceso Jalansiriscocha","5200P-013916 - Air Forced System in Rougher Stage II","5200P-014577 - Ferrobamba 7","5200P-014744 - Decarbonization Material Movement (PFS)","5200P-014913 - Overland Conveyor 4 Replacement","5200P-015383 - Mejora del sistema de protección contra incendios","5200P-015412 - Power System - Harmonic Filter","5200P-015440 - CB1 (Fase 2)","5200P-015580 - Ferrobamba 6A","5200P-015753 - TD&RWI Reclaim Water Chuspiri (IMP) - Reubicación de barcazas Huacaschaca a Chuspiri","5200P-015754 - TDI Fase 2","5200P-015787 - Stg3 - Sulfobamba (IMP)","5200P-015791 - Tailings Dam Construction Stage VI (IMP) - Construccion de la presa de relaves Fase VI","5200P-015842 - Pionero Waste Dump (IMP)","5200P-015896 - Camp XP Potable Water Plant Adaptation","5200P-016139 - Tailings Dam 2 (IMP)","5200P-016255 - Ferrobamba 6B","5200P-016323 - FB BWM-Sediment pond Jalansiricocha(IMP)","5200P-016325 - FB BWM-FB Pit Dwtrng to Clarif.Pond(IMP)","5200P-016326 - FB BWM – Seepage & Huancarane to TSF (Se Control)","5200P-016327 - FB BWM-Additional discharge point (IMP) - Línea Bidireccional - ID40_Nuevo punto de vertimiento","5200P-016368 - Sanitary Landfill Expansion (IMP - Relleno sanitario)","5200P-016375 - Foaming excess control in flotation","5200P-016384 - Mejoramiento de Planta de tratamiento de agua potable","5200P-016387 - DMO Ferro 1","5200P-016399A - Column Cells","5200P-016399B - Column Cells","5200P-016408 - System for Magnetite Control in the Primary Crusher (IMP)","5200P-016409 - Pionero Waste Dump (FS)","5200P-016534 - Selenium treatment plant (IMP)","5200P-016535 - Selenium Treatment plant (PFS) - Planta Piloto","5200P-016564 - Return of FB pit dewatering to East Channel","5200P-016611 - Reemplazo de motor de la faja 27","5200P-016993 - Drenajes del Trench de Molienda","5200P-016999 - Semi Independización de Bombas","5200P-017042 - Fifth Barge for recovered water system (IMP)","5200P-017051 - Speed variator for belt 11 (FS)","5200P-017054 - Pumps, thickeners&tanks optimization (IMP)","5200P-017057 - Installation of Magnet on Belt 13","5200P-017081 - Chutes System optimization in the Pebbles Area (IMP)","5200P-017130 - Motors of thickener overflow pumps replacement (IMP)","5200P-017133 - DMO Ferro 2","5200P-017152 - Thickeners Overflow Upgrade 5th pump (IMP) - 5ta Bomba","5200P-017173 - WM Ferrobamba & Huancarane (IMP)","5200P-017192 - Instalación de un 4to Filtro de concentrado de Cobre (IMP)","5200P-017205 - EW REUBICACIÓN DEL CHANCADOR PRIMARIO","5200P-017205 - Primary Crusher Relocation MAIN WORKS (IMP)","5200P-017222 - Moly Plant Optimization (IMP)","5200P-017223 - Sistema experto de Molienda","5200P-017232 - New 3 1/2 \" grinding ball Hopper - mill (IMP) + ID18","5200P-017256 - CB Stage 2 Supplementary Fund (IMP)","5200P-017519 - TSF1 Antawasi Camp Relocation – Early Works  (Mov. de tierras Antawasi)","5200P-017543 - EW AMPLIACIÓN DE PLANTA A 61.00 MTPA (Antes 55)","5200P-017545 - Plant Expansion 81 MTPY (IMP)","5200P-017547 - Molybdenum Filter Replacement (IMP)","5200P-017548 - Process Water Improvement (IMP) -Optimización de agua recuperada para Planta concentradora","5200P-017549 - Dispersant Reagent Preparat. Plant (IMP)","5200P-017552 - Chalcobamba 2 - Ph2 MEIA5 (IMP)","5200P-017640 - Nuevo taller de mantenimiento de equipos livianos","5200P-017641 - CVB-04 Conveyor belt crossing drainage","5200P-017648 - Recuperación de Campamento XP Fase 1 (1018 pax) (IMP)","5200P-017649 - Ampliación de Campamento XP Fase 2 (1800 pax) (IMP)","5200P-017673 - Modular Tanks at Huancarane Gas Station  (IMP)","5200P-01XXX - Spigots","5200P-01XXXX -  AMPLIACIÓN DE PLANTA A 81.00 MTPA","5200P-01XXXX - MW REUBICACIÓN DEL CHANCADOR PRIMARIO","5200X-000028 - Cerco Manantiales","Implementación de tanques de dosificación de CO₂ en la planta Moly (MEIA4 incluido) (IMP)","Inyección de Nitrógeno a la Flotación Ro Scv y 1° Clnr y Clnr Scv de Molibdeno","Línea Eléctrica para la estación de Bombeo Chuspiri (IMP)","Manejo de agua Chalcobamba a Chuspiri (ITS11) - Sedimentation Dike & Control Pond","Manejo de agua MEIA 5","Reubicación de campamento Anta Wasi. 2da etapa","TSF 1 - Stg VII / VIII Facilities (IMP) -  Fund 1 Earthworks  (Antawasi Camp Relocation)","Tubería de transferencia desde canal de derivación TSF al canal de contorno este (IMP)","Tunel vía nacional - HR Chalcobamba (Construcción de Paso a desnivel - Vía Interna Haul Road) (IMP)","Water Management MEIA 5 (IMP)"],"grupos":["Proyectos Generales","Reub. Chancadora y Ampliac Planta"],"categorias":["C01 - BOMBAS","C01 - MOV. TIERRAS","C02 - CABLES","C02 - INFRAESTRUCTURA","C03 - CONTROL Y AUTOMATIZACIÓN","C03 - ELECTROMECÁNICOS","C04 - AIRE, VENTILACIÓN Y ENFRIAMIENTO","C04 - LÍNEAS ELÉCTRICAS","C05 - EQUIPOS DE PROCESO","C05 - SECTORIALES CB","C06 - EQUIPOS PARA INTEGRACIÓN","C06 - SIN ESTRATEGIA","C07 - ESTRUCTURAS METÁLICAS","C08 - GABINETES DE CONTROL Y RESPALDO","C09 - GRUPOS ELECTRÓGENOS","C10 - INSTRUMENTACIÓN DE CAMPO","C11 - IZAJES","C13 - MISCELÁNEOS ELÉCTRICOS","C14 - MISCELÁNEOS MECÁNICOS","C16 - MOTORES","C17 - POSTES","C18 - PLANTAS DE TRATAMIENTO DE AGUA POTABLE","C19 - SECCIONADORES Y RECLOSER","C20 - SUBESTACIONES Y EQUIPOS","C21 - TUBERÍAS DE ACERO Y ACCESORIOS","C22 - TUBERÍAS DE HDPE Y ACCESORIOS","C23 - VÁLVULAS","C24 - SIN ESTRATEGIA","Cables","EEMM","Equipos electricos","Gabinetes de control y respaldo","Grupos electrógenos","Infra","Instrumentación & Control","Instrumentación de campo","Instrumentación y Control","Instrumentos","LLEE","MT","Mecánica Planta","Misceláneos","Misceláneos Eléctricos","Misceláneos Mecánicos","Postes","Tuberías de HDPE y accesorios","Tuberías y Accesorios","Válvulas"],"clientes":["Alex Inostroza","Reinaldo Ponce de León","Herman Aleman","OP","Suministro"],"liderSupply":["Cheng T.","Carlos C."],"tipo":["LB sin Anexo 1 (Proy. Antiguos)","Anexo 1 Aprob","Emergente sin Anexo 1","Fcst No Aprob","Anexo 1 Draft"],"tipoAsignacion":[{"val":"Licitacion","label":"Licitación (> US$ 100k)"},{"val":"PR","label":"Compra menor / PR (≤ US$ 100k)"},{"val":"CVAF","label":"Adenda (CVAF)"},{"val":"SS","label":"Sole / Single Source"}]};
+let historial = [];
+let registros = [];
+let editIndex = null;   // null = modo agregar; numero = editando ese indice
+let proyectosExtra = []; // proyectos agregados por el usuario
+
+// ===== GUARDADO AUTOMATICO EN EL NAVEGADOR (para no perder trabajo al cerrar) =====
+const LS_KEY = 'registroComponentesSupply_v1';
+function guardarLocal(){
+  try{
+    localStorage.setItem(LS_KEY, JSON.stringify({registros, proyectosExtra, ts:Date.now()}));
+    marcarGuardado();
+  }catch(e){ /* si el navegador bloquea storage, la app sigue funcionando igual */ }
+}
+function restaurarLocal(){
+  try{
+    const raw=localStorage.getItem(LS_KEY);
+    if(!raw) return false;
+    const d=JSON.parse(raw);
+    registros = d.registros||[];
+    proyectosExtra = d.proyectosExtra||[];
+    return true;
+  }catch(e){ return false; }
+}
+function borrarTodo(){
+  if(!confirm('Esto borra TODOS los componentes y proyectos guardados en esta computadora. ¿Seguro?')) return;
+  registros=[]; proyectosExtra=[];
+  try{ localStorage.removeItem(LS_KEY); }catch(e){}
+  refreshProyectos(); renderTabla(); cancelarEdit();
+  toast('Todo borrado');
+}
+function marcarGuardado(){
+  const el=$('savedFlag'); if(!el) return;
+  const h=new Date(); const hh=String(h.getHours()).padStart(2,'0'), mm=String(h.getMinutes()).padStart(2,'0');
+  el.textContent='Guardado automático · última vez '+hh+':'+mm;
+}
+
+const $ = id => document.getElementById(id);
+function hoyISO(){ return new Date().toISOString().slice(0,10); }
+function ddmm(iso){ if(!iso) return ''; const [y,m,d]=iso.split('-'); return d+'/'+m; }
+function fill(sel, arr, placeholder){
+  const el=$(sel); el.innerHTML='';
+  if(placeholder!==undefined){const o=document.createElement('option');o.value='';o.textContent=placeholder;el.appendChild(o);}
+  arr.forEach(v=>{const o=document.createElement('option');
+    if(typeof v==='object'){o.value=v.val;o.textContent=v.label;}else{o.value=v;o.textContent=v;}
+    el.appendChild(o);});
+}
+function listaProyectos(){ return proyectosExtra.slice(); }
+// ESTO REFRESCA EL DROPDOWN DE PROYECTOS CON PLACEHOLDER SEGUN HAYA O NO PROYECTOS
+function refreshProyectos(){
+  const arr=listaProyectos();
+  const ph = arr.length ? '— Selecciona proyecto —' : '— Sin proyectos: agrega uno con el botón —';
+  fill('proyecto', arr, ph);
+}
+
+// RESTAURAR trabajo previo guardado en esta computadora (si lo hay)
+restaurarLocal();
+refreshProyectos();
+fill('grupo', DATA.grupos, '—');
+fill('cliente', DATA.clientes, '—');
+fill('categoria', DATA.categorias, '—');
+fill('tipo', DATA.tipo, '—');
+fill('tipoAsig', DATA.tipoAsignacion, '—');
+$('fechaReg').value = hoyISO();
+
+// ===== ID SUPPLY automatico =====
+function calcID(){
+  const p=$('proyecto').value, box=$('idVal');
+  if(!p){box.textContent='Elige un proyecto';box.classList.add('empty');return '';}
+  const cod=(p.split(' - ')[0]||p).trim();
+  // al editar, no contar el propio registro
+  const n=registros.filter((r,i)=>r._codProj===cod && i!==editIndex).length+1;
+  const id=cod+'-'+String(n).padStart(2,'0');
+  box.textContent=id; box.classList.remove('empty');
+  return id;
+}
+$('proyecto').addEventListener('change', calcID);
+
+// ===== FLUJO =====
+function keyFlujo(){
+  const t=$('tipoAsig').value, s=$('servSum').value;
+  if(!t||!s) return null;
+  return t+'|'+s;
+}
+function pintarFlujo(){
+  const k=keyFlujo();
+  $('avisoSS').classList.toggle('show', $('tipoAsig').value==='SS');
+  const box=$('flujoBox'), sel=$('estatusEsp');
+  const prev=sel.value;
+  if(!k||!DATA.flujos[k]){
+    box.innerHTML='<div class="hint">Elige Tipo de asignación + Servicio/Suministro para ver la secuencia oficial de pasos y responsables.</div>';
+    sel.innerHTML='<option value="">Elige tipo + serv/sum primero</option>';
+    return;
+  }
+  const pasos=DATA.flujos[k];
+  box.innerHTML = pasos.map((p,i)=>{
+    const num=(p.paso.match(/^(\d+)\./)||[])[1]||(i+1);
+    const txt=p.paso.replace(/^\d+\.\s*/,'');
+    return '<div class="paso"><div class="n">'+num+'</div><div class="txt">'+txt+'</div>'
+         + (p.resp?'<div class="resp">'+p.resp+'</div>':'')+'</div>';
+  }).join('');
+  sel.innerHTML='<option value="">— Selecciona paso actual —</option>';
+  pasos.forEach(p=>{const o=document.createElement('option');o.value=p.paso;o.dataset.resp=p.resp||'';o.textContent=p.paso;sel.appendChild(o);});
+  if(prev){ sel.value=prev; }  // conservar si sigue existiendo
+}
+$('tipoAsig').addEventListener('change', pintarFlujo);
+$('servSum').addEventListener('change', pintarFlujo);
+
+$('estatusEsp').addEventListener('change', function(){
+  const opt=this.options[this.selectedIndex];
+  $('respStatus').value = opt ? (opt.dataset.resp||'') : '';
+  $('respHint').textContent = opt&&opt.dataset.resp ? 'Responsable: '+opt.dataset.resp : '';
+});
+
+function calcSemaforo(){
+  const meta=$('fechaMeta').value, real=$('fechaReal').value;
+  const dv=$('desvView'), sv=$('semView');
+  if(!meta||!real){ dv.textContent='—'; sv.className='semaforo sem-none';
+    sv.innerHTML='<span class="dot"></span>Sin fecha'; return {desv:'',clase:'none'}; }
+  const dias=Math.round((new Date(meta)-new Date(real))/86400000);
+  dv.textContent=(dias>0?'+':'')+dias;
+  let clase,label;
+  if(dias>0){clase='ok';label='Verde · adelantado';}
+  else if(dias===0){clase='warn';label='Ámbar · a tiempo';}
+  else{clase='bad';label='Rojo · atrasado';}
+  sv.className='semaforo sem-'+clase;
+  sv.innerHTML='<span class="dot"></span>'+label;
+  return {desv:dias,clase};
+}
+$('fechaMeta').addEventListener('change', calcSemaforo);
+$('fechaReal').addEventListener('change', calcSemaforo);
+
+function addHist(){
+  const nota=$('histNota').value.trim();
+  if(!nota){toast('Escribe una nota primero');return;}
+  historial.unshift({fecha:ddmm(hoyISO()), nota});
+  $('histNota').value='';
+  renderHist();
+}
+function renderHist(){
+  const el=$('histList');
+  if(!historial.length){el.innerHTML='<div class="hist-empty">Sin notas todavía. Cada nota se guarda con su fecha.</div>';return;}
+  el.innerHTML=historial.map(h=>'<div class="hist-item"><span class="fecha">'+h.fecha+':</span>'+h.nota+'</div>').join('');
+}
+function histToText(){ return historial.map(h=>h.fecha+': '+h.nota).join('\n'); }
+function textToHist(txt){
+  if(!txt) return [];
+  return txt.split('\n').filter(x=>x.trim()).map(line=>{
+    const m=line.match(/^([^:]+):\s*(.*)$/);
+    return m?{fecha:m[1].trim(),nota:m[2].trim()}:{fecha:'',nota:line.trim()};
+  });
+}
+
+// ===== LEER FORMULARIO -> OBJETO =====
+function leerForm(){
+  const sem=calcSemaforo();
+  const p=$('proyecto').value;
+  const cod=(p.split(' - ')[0]||p).trim();
+  const tipoLabel=$('tipoAsig').value?$('tipoAsig').options[$('tipoAsig').selectedIndex].textContent:'';
+  return {
+    _codProj:cod,
+    id:calcID(), proyecto:p, grupo:$('grupo').value, cliente:$('cliente').value,
+    categoria:$('categoria').value, paquete:$('paquete').value,
+    nombreComp:$('nombreComp').value, tipoAsig:$('tipoAsig').value, tipoLabel,
+    servSum:$('servSum').value, ticket:$('ticket').value, tipo:$('tipo').value,
+    budEst:$('budEst').value, budPlan:$('budPlan').value, budReal:$('budReal').value,
+    estatusEsp:$('estatusEsp').value, respStatus:$('respStatus').value,
+    fechaMeta:$('fechaMeta').value, fechaReal:$('fechaReal').value,
+    desv:sem.desv, semClase:sem.clase, historial:histToText(),
+    registradoPor:$('registradoPor').value, fechaReg:$('fechaReg').value,
+    ultimaMod:hoyISO()
+  };
+}
+function validar(){
+  const req=[['proyecto','Proyecto'],['nombreComp','Nombre del componente'],
+    ['tipoAsig','Tipo de asignación'],['servSum','Servicio o Suministro'],['registradoPor','Registrado por']];
+  for(const [id,lbl] of req){ if(!$(id).value.trim()){toast('Falta: '+lbl); $(id).focus(); return false;} }
+  return true;
+}
+
+// ===== AGREGAR (o guardar edicion) =====
+function agregar(){
+  if(!validar()) return;
+  if(editIndex!==null){
+    const orig=registros[editIndex];
+    const nuevo=leerForm();
+    nuevo.fechaReg=orig.fechaReg;  // conservar fecha original de registro
+    registros[editIndex]=nuevo;
+    toast('Cambios guardados ✓');
+    cancelarEdit();
+  }else{
+    registros.push(leerForm());
+    toast('Componente agregado ✓');
+    limpiar(true);
+  }
+  renderTabla();
+}
+
+// ===== EDITAR: cargar registro al formulario =====
+function editar(i){
+  const r=registros[i];
+  editIndex=i;
+  $('proyecto').value=r.proyecto;
+  $('grupo').value=r.grupo; $('cliente').value=r.cliente;
+  $('categoria').value=r.categoria; $('paquete').value=r.paquete;
+  $('nombreComp').value=r.nombreComp;
+  $('tipoAsig').value=r.tipoAsig; $('servSum').value=r.servSum;
+  $('ticket').value=r.ticket; $('tipo').value=r.tipo;
+  $('budEst').value=r.budEst; $('budPlan').value=r.budPlan; $('budReal').value=r.budReal;
+  pintarFlujo();
+  $('estatusEsp').value=r.estatusEsp;
+  $('respStatus').value=r.respStatus;
+  $('respHint').textContent=r.respStatus?'Responsable: '+r.respStatus:'';
+  $('fechaMeta').value=r.fechaMeta; $('fechaReal').value=r.fechaReal;
+  $('registradoPor').value=r.registradoPor; $('fechaReg').value=r.fechaReg;
+  historial=textToHist(r.historial); renderHist();
+  calcSemaforo(); calcID();
+  // UI en modo edicion
+  $('editbar').classList.add('show'); $('editId').textContent=r.id;
+  $('btnAgregar').textContent='Guardar cambios';
+  renderTabla();
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+function cancelarEdit(){
+  editIndex=null;
+  $('editbar').classList.remove('show');
+  $('btnAgregar').textContent='Agregar componente al registro';
+  limpiar(false);
+  renderTabla();
+}
+
+// ===== ELIMINAR =====
+function eliminar(i){
+  if(!confirm('¿Eliminar el componente '+registros[i].id+'?')) return;
+  registros.splice(i,1);
+  if(editIndex===i) cancelarEdit();
+  renderTabla();
+  toast('Componente eliminado');
+}
+
+const SEMCOLOR={ok:'#1f8a4c',warn:'#c98a12',bad:'#c0392b',none:'#c5ccd4'};
+function renderTabla(){
+  guardarLocal();  // ESTO PERSISTE LOS DATOS EN EL NAVEGADOR EN CADA CAMBIO
+  $('conteo').textContent=registros.length;
+  const tb=$('tbody');
+  if(!registros.length){tb.innerHTML='<tr><td colspan="12" class="tabla-empty">Aún no hay componentes. Agrega el primero desde el formulario.</td></tr>';return;}
+  tb.innerHTML=registros.map((r,i)=>{
+    const est=(r.estatusEsp||'').slice(0,32);
+    const cls=(editIndex===i)?' class="row-edit"':'';
+    return '<tr'+cls+'>'
+      +'<td><b>'+r.id+'</b></td>'
+      +'<td>'+(r.proyecto.split(' - ')[1]||r.proyecto).slice(0,26)+'</td>'
+      +'<td>'+r.nombreComp.slice(0,26)+'</td>'
+      +'<td>'+r.tipoAsig+'</td>'
+      +'<td>'+r.servSum+'</td>'
+      +'<td>'+(r.budPlan?('$'+r.budPlan+'M'):'—')+'</td>'
+      +'<td>'+(est||'—')+'</td>'
+      +'<td>'+(r.respStatus||'—')+'</td>'
+      +'<td style="text-align:center">'+(r.desv===''?'—':(r.desv>0?'+':'')+r.desv)+'</td>'
+      +'<td style="text-align:center"><span class="mini-sem" style="background:'+SEMCOLOR[r.semClase]+'"></span></td>'
+      +'<td>'+r.registradoPor+'</td>'
+      +'<td style="white-space:nowrap"><button class="btn-sm btn-edit" onclick="editar('+i+')">Editar</button> '
+      +'<button class="btn-sm btn-del" onclick="eliminar('+i+')">Eliminar</button></td>'
+      +'</tr>';
+  }).join('');
+}
+
+function limpiar(keepReg){
+  ['nombreComp','paquete','ticket','budEst','budPlan','budReal','histNota',
+   'fechaMeta','fechaReal','respStatus'].forEach(id=>$(id).value='');
+  ['proyecto','grupo','cliente','categoria','tipoAsig','servSum','tipo','estatusEsp'].forEach(id=>$(id).selectedIndex=0);
+  if(!keepReg) $('registradoPor').value='';
+  historial=[]; renderHist(); pintarFlujo(); calcSemaforo(); calcID();
+}
+
+// ===== MODAL AGREGAR PROYECTO =====
+function abrirModalProj(){ $('npCod').value=''; $('npNombre').value=''; $('modalProj').classList.add('show'); setTimeout(()=>$('npCod').focus(),50); }
+function cerrarModalProj(){ $('modalProj').classList.remove('show'); }
+function guardarProj(){
+  const cod=$('npCod').value.trim(), nom=$('npNombre').value.trim();
+  if(!cod||!nom){toast('Completa código y nombre');return;}
+  const entrada=cod+' - '+nom;
+  if(listaProyectos().includes(entrada)){toast('Ese proyecto ya existe');return;}
+  proyectosExtra.push(entrada);
+  guardarLocal();
+  refreshProyectos();
+  $('proyecto').value=entrada;
+  calcID();
+  cerrarModalProj();
+  toast('Proyecto agregado ✓');
+}
+
+function descargar(){
+  if(!registros.length){toast('No hay componentes para descargar');return;}
+  const headers=['ID Supply','Grupo','Proyecto','Cliente','Categoría','Paquete',
+    'Tipo Asignación','Servicio o Suministro','Nombre del Componente',
+    'Budget Estudios US$M','Budget Planificado US$M','Budget Real US$M',
+    '# Ticket / PR','Tipo','Historial','Estatus Específico','Responsable del Status',
+    'Fecha meta Hito','Fecha real cumplimiento','Desviación del Hito','Semáforo',
+    'Registrado por','Fecha de registro','Última modificación'];
+  const SEMTXT={ok:'Verde',warn:'Ámbar',bad:'Rojo',none:''};
+  const rows=registros.map(r=>[
+    r.id,r.grupo,r.proyecto,r.cliente,r.categoria,r.paquete,
+    r.tipoLabel,r.servSum,r.nombreComp,
+    r.budEst,r.budPlan,r.budReal,
+    r.ticket,r.tipo,r.historial,r.estatusEsp,r.respStatus,
+    r.fechaMeta,r.fechaReal,r.desv,SEMTXT[r.semClase],
+    r.registradoPor,r.fechaReg,r.ultimaMod
+  ]);
+  const ws=XLSX.utils.aoa_to_sheet([headers,...rows]);
+  ws['!cols']=headers.map(h=>({wch:Math.max(12,Math.min(40,h.length+4))}));
+  const wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb,ws,'Componentes');
+  XLSX.writeFile(wb,'Registro_Componentes_'+hoyISO()+'.xlsx');
+  toast('Excel descargado ✓');
+}
+
+let toastT;
+function toast(msg){
+  const t=$('toast'); t.textContent=msg; t.classList.add('show');
+  clearTimeout(toastT); toastT=setTimeout(()=>t.classList.remove('show'),2200);
+}
+// cerrar modal al hacer click fuera
+$('modalProj').addEventListener('click',e=>{if(e.target===$('modalProj'))cerrarModalProj();});
+
+// PINTAR LA TABLA AL ABRIR (muestra lo que se haya restaurado del guardado automatico)
+renderTabla();
+</script>
+</body>
+</html>
